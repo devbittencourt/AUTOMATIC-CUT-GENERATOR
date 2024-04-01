@@ -1,0 +1,63 @@
+import os
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from moviepy.editor import VideoFileClip
+import sys
+
+output = open("output.txt", "wt")
+sys.stdout = output
+sys.stderr = output
+
+class VideoCutterApp:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Video Cutter App")
+        self.master.geometry("400x200")
+
+        self.video_path = None
+
+        self.label = tk.Label(master, text="Selecione o vídeo:")
+        self.label.pack()
+
+        self.select_button = tk.Button(master, text="Selecionar Vídeo", command=self.select_video)
+        self.select_button.pack()
+
+        self.cut_button = tk.Button(master, text="Cortar Vídeo", command=self.cut_video, state=tk.DISABLED)
+        self.cut_button.pack()
+
+    def select_video(self):
+        self.video_path = filedialog.askopenfilename(filetypes=[("Arquivos de Vídeo", "*.mp4")])
+        if self.video_path:
+            self.cut_button.config(state=tk.NORMAL)
+
+    def cut_video(self):
+        if not self.video_path:
+            messagebox.showerror("Erro", "Nenhum vídeo selecionado!")
+            return
+
+        video = VideoFileClip(self.video_path)
+        base_name = os.path.splitext(os.path.basename(self.video_path))[0]
+        folder_path = os.path.dirname(self.video_path)
+
+        output_folder = os.path.join(folder_path, f"{base_name}_cuts")
+        os.makedirs(output_folder, exist_ok=True)
+
+        duration = int(video.duration)
+
+        for i in range(0, duration, 60):
+            start = i
+            end = min(i + 60, duration)
+            subclip = video.subclip(start, end)
+            subclip.write_videofile(os.path.join(output_folder, f"{base_name}_part_{start}_{end}.mp4"), codec="libx264")
+
+        messagebox.showinfo("Sucesso", "Vídeo cortado com sucesso!")
+
+
+def main():
+    root = tk.Tk()
+    app = VideoCutterApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
